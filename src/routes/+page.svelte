@@ -1,19 +1,149 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/tauri";
+  import { fade } from "svelte/transition";
+  let showModal = false;
 
-  let name = "";
-  let greetMsg = "";
+  let redisMode = "standalone"; // 默认为单机模式
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    greetMsg = await invoke("greet", { name });
+  let redisConfig = {
+    name: "",
+    host: "",
+    port: "",
+    password: "",
+    clusterNodes: [""],
+  };
+  function openModal() {
+    showModal = true;
+  }
+
+  function closeModal() {
+    showModal = false;
+  }
+
+  function addClusterNode() {
+    redisConfig.clusterNodes.push("");
+  }
+
+  function removeClusterNode(index) {
+    redisConfig.clusterNodes.splice(index, 1);
+  }
+
+  function submitConfig() {
+    console.log("Submitted Redis Config:", redisConfig);
+    closeModal();
   }
 </script>
 
 <div class="flex flex-row h-full">
-  <div class="w-1/5 bg-blue-100 h-full">1</div>
-  <div class="flex-1 bg-red-300">2</div>
+  <div class="w-1/3 bg-blue-100 h-full">
+    <div class="h-12 bg-gray-200 p-1">
+      <button
+        on:click={() => (showModal = true)}
+        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+      >
+        Add redis
+      </button>
+    </div>
+    <div class="h-12 bg-amber-100 flex felx-col justify-between items-center">
+      <div class="p-2">lssc-uat</div>
+      <div class="p-2">lssc-uat</div>
+    </div>
+  </div>
+  <div class="flex-1 bg-red-100">2</div>
 </div>
+{#if showModal}
+  <div
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+  >
+    <div
+      class="bg-white rounded-lg shadow-lg transform transition-transform duration-300 ease-out scale-90"
+      transition:fade={{ duration: 300 }}
+      style="animation: scaleUp 0.3s ease-out forwards;"
+    >
+      <div class="px-8 py-6">
+        <h2 class="text-2xl font-bold text-gray-800">Redis Configuration</h2>
+
+        <div class="mt-4">
+          <label class="block text-gray-700">Redis Mode</label>
+          <select bind:value={redisMode} class="mt-2 p-2 border rounded">
+            <option value="standalone">Standalone</option>
+            <option value="cluster">Cluster</option>
+          </select>
+        </div>
+
+        {#if redisMode === "standalone"}
+          <!-- 单机模式配置 -->
+          <div class="mt-4">
+            <label class="block text-gray-700">Host</label>
+            <input
+              type="text"
+              bind:value={redisConfig.host}
+              class="mt-2 p-2 border rounded w-full"
+              placeholder="127.0.0.1"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="block text-gray-700">Port</label>
+            <input
+              type="text"
+              bind:value={redisConfig.port}
+              class="mt-2 p-2 border rounded w-full"
+              placeholder="6379"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="block text-gray-700">Password</label>
+            <input
+              type="password"
+              bind:value={redisConfig.password}
+              class="mt-2 p-2 border rounded w-full"
+            />
+          </div>
+        {/if}
+
+        {#if redisMode === "cluster"}
+          <!-- 集群模式配置 -->
+          <div class="mt-4">
+            {#each redisConfig.clusterNodes as node, index}
+              <div class="flex items-center mt-2">
+                <input
+                  type="text"
+                  bind:value={redisConfig.clusterNodes[index]}
+                  class="p-2 border rounded w-full mr-2"
+                />
+                <button
+                  on:click={() => removeClusterNode(index)}
+                  class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded"
+                >
+                  Remove
+                </button>
+              </div>
+            {/each}
+            <button
+              on:click={addClusterNode}
+              class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+            >
+              Add Node
+            </button>
+          </div>
+        {/if}
+      </div>
+      <div class="px-8 py-4 bg-gray-200 text-right">
+        <button
+          class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded mr-2"
+          on:click={closeModal}
+        >
+          Cancel
+        </button>
+        <button
+          class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+          on:click={submitConfig}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   :root {
@@ -32,98 +162,12 @@
     -webkit-text-size-adjust: 100%;
     height: 100%;
   }
-
-  .container {
-    margin: 0;
-    padding-top: 10vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: 0.75s;
-  }
-
-  .logo.tauri:hover {
-    filter: drop-shadow(0 0 2em #24c8db);
-  }
-
-  .row {
-    display: flex;
-    justify-content: center;
-  }
-
-  a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
-  }
-
-  a:hover {
-    color: #535bf2;
-  }
-
-  h1 {
-    text-align: center;
-  }
-
-  input,
-  button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    color: #0f0f0f;
-    background-color: #ffffff;
-    transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-  }
-
-  button {
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: #396cd8;
-  }
-  button:active {
-    border-color: #396cd8;
-    background-color: #e8e8e8;
-  }
-
-  input,
-  button {
-    outline: none;
-  }
-
-  #greet-input {
-    margin-right: 5px;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color: #f6f6f6;
-      background-color: #2f2f2f;
+  @keyframes scaleUp {
+    from {
+      transform: scale(0.9);
     }
-
-    a:hover {
-      color: #24c8db;
-    }
-
-    input,
-    button {
-      color: #ffffff;
-      background-color: #0f0f0f98;
-    }
-    button:active {
-      background-color: #0f0f0f69;
+    to {
+      transform: scale(1);
     }
   }
 </style>
